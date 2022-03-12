@@ -2,10 +2,10 @@
 #include <random>
 #include <iostream>
 
-#define MAX_N 3//64
-#define MIN_N 3//7
-#define MAX_K 2//11
-#define MIN_K 2//1
+#define MAX_N 64//64
+#define MIN_N 7//7
+#define MAX_K 11//11
+#define MIN_K 1//1
 
 using namespace std;
 
@@ -34,7 +34,7 @@ static inline float* im2float(int image[], unsigned int n) {
 
 static inline float* generate_filter(unsigned int k) {
   using unireal=uniform_real_distribution<float>;
-  float *result = new float[k];
+  float *result = new float[k*k]();
   for (int i=0; i<k*k; ++i)
     result[i] = randn<float, unireal>(0.0f, 1.0f);
   return result;
@@ -43,12 +43,14 @@ static inline float* generate_filter(unsigned int k) {
 template <typename T>
 static inline void print_image(T image[], unsigned int n) {
   cout << fixed;
-  cout.precision(6);
+  cout.precision(8);
   for (int i=0; i<n; ++i) {
+    cout << "[";
     for (int j=0; j<n; ++j)
       cout << image[i*n + j] << ", ";
-    cout << endl << endl;
+    cout << "]," << endl;
   }
+  cout << endl;
 }
 
 static inline float get_coord
@@ -79,7 +81,13 @@ static inline void convolve
     for (int i=0; i<k; ++i) {
       int _x = x+i-k/2; int _y = y+j-k/2;
       float G = get_coord(image, n, _x, _y);
-      float F = filter[j*k + i]; // TODO: flip and rotate F
+      //float F = filter[j*k + i]; // TODO: flip and rotate F
+      int _i = k+~i;
+      int _j = (k+~j);
+      float F = filter[_j*k + _i];
+      //cout<<"F["<<i<<","<<j<<"] = "<<filter[j*k + i]<<endl;
+      //cout<<"_F["<<_i<<","<<_j<<"] = " << filter[_j*k + _i] << endl;
+      //cout << endl;
       result[y*n + x] += F * G;
     }
   }
@@ -92,7 +100,7 @@ float* direct_convolution
   unsigned int n,
   unsigned int k
 ) {
-  float *result = new float[n]();
+  float *result = new float[n*n]();
   for (int y=0; y<n; ++y) {
     for (int x=0; x<n; ++x) {
       convolve(result, image, filter, x, y, n, k);
@@ -102,22 +110,15 @@ float* direct_convolution
 }
 
 int main(void) {
-  // Main steps:
-  // 1. generate random test images
   int n = randn(MIN_N, MAX_N);
+  int k = (k=randn(MIN_K, MAX_K)) & 1 ? k : k+1; // odd k
   int *input_image = generate_grayscale_image(n);
-  print_image(input_image, n);
   float *float_image = im2float(input_image, n);
   print_image(float_image, n);
-  // 2. implement direct convolution
-  int k = randn(MIN_K, MAX_K);
-  float *filter = generate_filter(k);  
+  float *filter = generate_filter(k);
   print_image(filter, k);
   float *filtered = direct_convolution(float_image, filter, n, k);
   print_image(filtered, n);
-  // 3. verify results somehow
-  // 4. implement matmul convolution
-  // 5. verify and cross-check results
   delete[] input_image;
   delete[] float_image;
   delete[] filter;
