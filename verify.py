@@ -1,3 +1,4 @@
+# ./direct_convolution | python3 ./verify.py
 import fileinput
 import numpy as np
 import scipy.signal
